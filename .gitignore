@@ -9,6 +9,12 @@ web/gen/
 web/gen_rso/
 web/assets/*
 !web/assets/README.md
+!web/assets/fondo.jpg
+!web/assets/btn-play.png
+!web/assets/btn-settings.png
+!web/assets/btn-credits.png
+!web/assets/barra.png
+!web/assets/dsu.png
 # your saves and logs
 *.bin
 !web/shaders.bin
@@ -21,6 +27,7 @@ __pycache__/
 Thumbs.db
 test-chrome-profile/
 tests/.game-smoke.png
+tests/.menu-*.png
 tests/.r2-*
 .wrangler/
 node_modules/

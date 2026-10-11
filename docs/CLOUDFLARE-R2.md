@@ -7,6 +7,9 @@ GitHub Pages origin to issue `HEAD` and `GET Range` requests.
 The project also deploys a Cloudflare Worker (`cloudflare/rabbids-assets/`) at
 `https://rabbids-go-home-assets.jmhq20120212.workers.dev/`. The Worker has an
 R2 binding to the dedicated bucket and supports `GET`, `HEAD`, `Range`, and CORS.
+The Worker hostname belongs to the Cloudflare account and does not change when
+the GitHub username changes. The browser page is at
+`https://teaserlua.github.io/rabbids-go-home-web-port/`.
 The Worker endpoint was validated with real Chrome requests from GitHub Pages.
 The source is in this repository; redeploy it with:
 

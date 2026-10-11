@@ -1,6 +1,7 @@
 // Serve the extracted game folder directly from a private Cloudflare R2 bucket.
 // GET/HEAD support HTTP byte ranges for the WebAssembly game runtime.
 const ALLOWED_ORIGINS = new Set([
+  'https://teaserlua.github.io',
   'https://jmhq20120212-cmd.github.io',
   'http://localhost:8991',
   'http://127.0.0.1:8991',

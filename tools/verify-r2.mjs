@@ -9,7 +9,7 @@ import path from 'node:path';
 const MiB = 1024 * 1024;
 const SLICE = 128 * MiB;
 const LIMIT = 280 * MiB;
-const PAGE_ORIGIN = 'https://jmhq20120212-cmd.github.io';
+const PAGE_ORIGIN = 'https://teaserlua.github.io';
 
 function argsOf(argv) {
   const a = {};

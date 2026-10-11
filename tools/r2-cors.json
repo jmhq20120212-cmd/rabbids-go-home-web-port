@@ -2,7 +2,7 @@
   "rules": [
     {
       "allowed": {
-        "origins": ["https://jmhq20120212-cmd.github.io", "http://localhost:8991", "http://127.0.0.1:8991"],
+        "origins": ["https://teaserlua.github.io", "https://jmhq20120212-cmd.github.io", "http://localhost:8991", "http://127.0.0.1:8991"],
         "methods": ["GET", "HEAD"],
         "headers": ["Range", "If-Range"]
       },

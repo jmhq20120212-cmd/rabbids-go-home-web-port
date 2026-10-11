@@ -2,7 +2,7 @@
 
 The GitHub Pages workflow publishes `web/` to:
 
-https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/
+https://teaserlua.github.io/rabbids-go-home-web-port/
 
 The repository-root `index.html` redirects to `web/` when Pages publishes from
 the `main` branch. When the GitHub Actions deployment publishes the contents of
@@ -50,7 +50,7 @@ is enabled in `web/game-config.json`. The browser loads them automatically.
 
 Cloudflare R2 with a custom public domain is one compatible option. Set bucket CORS
 to allow `GET`, `HEAD`, and the request header `Range` from
-`https://jmhq20120212-cmd.github.io` and expose `Content-Length`, `Content-Range`,
+`https://teaserlua.github.io` and expose `Content-Length`, `Content-Range`,
 and `Accept-Ranges` response headers. Verify these responses in the browser:
 
 * `HEAD /game/sys/boot.bin` returns 200 with a readable `Content-Length`.

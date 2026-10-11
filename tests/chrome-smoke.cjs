@@ -39,10 +39,10 @@ async function main() {
     await cdp('Runtime.enable');
     await cdp('Page.navigate', {url: gameTest || publishedGame
       ? (publishedGame
-        ? 'https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/?noshaderwarm&autostart'
+        ? 'https://teaserlua.github.io/rabbids-go-home-web-port/?noshaderwarm&autostart'
         : 'http://127.0.0.1:8991/?noshaderwarm&autostart')
       : publishedTest || syncProbe
-        ? 'https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/health.html'
+        ? 'https://teaserlua.github.io/rabbids-go-home-web-port/health.html'
         : 'http://127.0.0.1:8990/health.html'});
     if (syncProbe) {
       await delay(1800);

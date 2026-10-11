@@ -29,6 +29,7 @@ jobs:
           test -s web/shaders.bin
           test -s web/rgh-worker.js
           test -s web/coi-sw.js
+          for img in fondo.jpg btn-play.png btn-settings.png btn-credits.png barra.png dsu.png; do test -s "web/assets/$img"; done
           node --check web/rgh-host.js
           node --check web/rgh-worker.js
           node --check web/coi-sw.js

@@ -5,7 +5,7 @@ const args = process.argv.slice(2);
 function arg(name, fallback) { const i = args.indexOf(name); return i < 0 ? fallback : args[i + 1]; }
 const base = arg('--base');
 const object = arg('--object', 'game/sys/boot.bin');
-const origin = arg('--origin', 'https://jmhq20120212-cmd.github.io');
+const origin = arg('--origin', 'https://teaserlua.github.io');
 if (!base || !/^https:\/\//.test(base) || !/^[\w./$ ()-]+$/.test(object) || object.startsWith('/') || object.includes('..')) {
   console.error('Usage: node tools/check-r2.mjs --base https://PUBLIC-R2-DOMAIN/ [--object game/sys/boot.bin]');
   process.exit(2);
