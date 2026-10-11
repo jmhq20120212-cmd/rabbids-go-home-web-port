@@ -79,12 +79,30 @@ const assetBasePromise = fetch('game-config.json', { cache: 'no-store' })
 
 // Preload while the menu is visible. If it fails, a later Play click creates
 // a new promise, so transient AbortError does not poison the whole session.
+// An older cached index.html might load this newly deployed host script before
+// it has a wasm-loader.js tag. Load the dependency ourselves in that case.
+let loaderScriptPromise = null;
+function getModuleLoader() {
+  if (typeof RGHModuleLoader !== 'undefined') return Promise.resolve(RGHModuleLoader);
+  if (!loaderScriptPromise) {
+    loaderScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'wasm-loader.js?v=wasmfix1';
+      script.onload = () => typeof RGHModuleLoader !== 'undefined'
+        ? resolve(RGHModuleLoader)
+        : reject(new Error('WebAssembly loader script did not initialize'));
+      script.onerror = () => reject(new Error('Could not download the WebAssembly loader script'));
+      document.head.appendChild(script);
+    }).catch((error) => { loaderScriptPromise = null; throw error; });
+  }
+  return loaderScriptPromise;
+}
 let modulePromise = null;
 function startModuleLoad() {
   const startAt = performance.now();
   const promise = params.get('wasm')
     ? WebAssembly.compileStreaming(fetch(params.get('wasm')))
-    : RGHModuleLoader.load({ onRetry: (attempt, error) => log(`[wasm] retry ${attempt}: ${error?.message || error}`) });
+    : getModuleLoader().then((loader) => loader.load({ onRetry: (attempt, error) => log(`[wasm] retry ${attempt}: ${error?.message || error}`) }));
   modulePromise = promise.then((module) => {
     log(`[host] module compiled in ${((performance.now() - startAt) / 1000).toFixed(1)} s`);
     return module;

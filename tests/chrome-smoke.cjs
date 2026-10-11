@@ -9,6 +9,8 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function main() {
   const gameTest = process.argv.includes('--game');
   const publishedGame = process.argv.includes('--published-game');
+  const urlArg = process.argv.indexOf('--url');
+  const customUrl = urlArg < 0 ? null : process.argv[urlArg + 1];
   const simulateWasmAbort = process.argv.includes('--simulate-wasm-abort');
   const syncProbe = process.argv.includes('--sync-probe');
   const publishedTest = process.argv.includes('--published');
@@ -54,13 +56,13 @@ async function main() {
       assert(!injected.error,'Could not install artificial AbortError in Chrome');
       injectionId = injected.result?.identifier || null;
     }
-    await cdp('Page.navigate', {url: gameTest || publishedGame
+    await cdp('Page.navigate', {url: customUrl || (gameTest || publishedGame
       ? (publishedGame
         ? 'https://teaserlua.github.io/rabbids-go-home-web-port/?noshaderwarm&autostart'
         : 'http://127.0.0.1:8991/?noshaderwarm&autostart')
       : publishedTest || syncProbe
         ? 'https://teaserlua.github.io/rabbids-go-home-web-port/health.html'
-        : 'http://127.0.0.1:8990/health.html'});
+        : 'http://127.0.0.1:8990/health.html')});
     if (syncProbe) {
       await delay(1800);
       const probe = await cdp('Runtime.evaluate', {
