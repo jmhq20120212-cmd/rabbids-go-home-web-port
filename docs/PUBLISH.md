@@ -43,6 +43,12 @@ compressed WASM. Game disc contents stay outside Git history. The first visit in
 
 ## Object storage requirements
 
+The dedicated Cloudflare bucket `rabbids-go-home-web` has been created and
+tested with synthetic objects. See [CLOUDFLARE-R2.md](CLOUDFLARE-R2.md) for
+its configured CORS policy, development URL, two resumable upload methods,
+and instructions for a production custom domain. Game disc files have not
+been uploaded to the bucket.
+
 Cloudflare R2 with a custom public domain is one compatible option. Set bucket CORS
 to allow `GET`, `HEAD`, and the request header `Range` from
 `https://jmhq20120212-cmd.github.io` and expose `Content-Length`, `Content-Range`,

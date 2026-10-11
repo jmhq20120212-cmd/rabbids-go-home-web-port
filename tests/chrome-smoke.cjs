@@ -9,6 +9,8 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function main() {
   const gameTest = process.argv.includes('--game');
   const publishedTest = process.argv.includes('--published');
+  const r2Arg = process.argv.indexOf('--r2-base');
+  const r2Base = r2Arg < 0 ? null : process.argv[r2Arg + 1];
   const tabs = await (await fetch('http://127.0.0.1:9333/json')).json();
   const tab = tabs.find((x) => x.type === 'page');
   assert(tab, 'Chrome debugging endpoint has no page target');
@@ -83,6 +85,25 @@ async function main() {
     assert(result?.isolated, 'GitHub Pages-style service worker did not enable cross-origin isolation');
     assert(result?.controlled, 'Service worker did not control the page');
     assert.match(result.text, /WASM asset: PASS/);
+    if (r2Base) {
+      const address = new URL('test/range-check.bin', r2Base.endsWith('/') ? r2Base : r2Base + '/').href;
+      const probe = await cdp('Runtime.evaluate', {
+        expression: `(async () => {
+          const url = ${JSON.stringify(address)};
+          try {
+            const head = await fetch(url, {method:'HEAD'});
+            const range = await fetch(url, {headers:{Range:'bytes=0-31'}});
+            const data = new Uint8Array(await range.arrayBuffer());
+            return {isolated:crossOriginIsolated,head:head.status,size:head.headers.get('content-length'),range:range.status,contentRange:range.headers.get('content-range'),length:data.length,first:data[0],last:data[data.length-1]};
+          } catch(error) { return {error:String(error)}; }
+        })()`,
+        awaitPromise: true, returnByValue: true,
+      });
+      const got = probe.result?.result?.value;
+      console.log('R2 in actual GitHub Pages isolated browser:', got);
+      assert.deepEqual([got?.head, got?.size, got?.range, got?.contentRange, got?.length, got?.first, got?.last],
+        [200, '256', 206, 'bytes 0-31/256', 32, 0, 31], 'R2 browser CORS, HEAD, or byte range validation failed');
+    }
     console.log('PASS Chrome static hosting, COOP/COEP service worker and WASM asset');
   } finally { socket.close(); }
 }

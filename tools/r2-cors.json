@@ -1,0 +1,13 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["https://jmhq20120212-cmd.github.io", "http://localhost:8991", "http://127.0.0.1:8991"],
+        "methods": ["GET", "HEAD"],
+        "headers": ["Range", "If-Range"]
+      },
+      "exposeHeaders": ["Content-Length", "Content-Range", "Accept-Ranges", "ETag"],
+      "maxAgeSeconds": 7200
+    }
+  ]
+}

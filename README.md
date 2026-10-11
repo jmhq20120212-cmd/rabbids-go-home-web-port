@@ -2,6 +2,7 @@
 
 **Browser:** https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/
 **Publishing and game file setup:** [docs/PUBLISH.md](docs/PUBLISH.md)
+**Cloudflare R2 configuration:** [docs/CLOUDFLARE-R2.md](docs/CLOUDFLARE-R2.md)
 
 *Ported by **teaser.lua**.*
 

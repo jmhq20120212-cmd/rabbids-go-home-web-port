@@ -22,3 +22,6 @@ __pycache__/
 Thumbs.db
 test-chrome-profile/
 tests/.game-smoke.png
+tests/.r2-*
+.wrangler/
+node_modules/
