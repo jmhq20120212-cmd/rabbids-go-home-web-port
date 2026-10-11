@@ -1,0 +1,43 @@
+name: Publish playable web port
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required browser files
+        run: |
+          test -s web/index.html
+          test -s web/rgh.wasm.gz
+          test -s web/shaders.bin
+          test -s web/rgh-worker.js
+          test -s web/coi-sw.js
+          node --check web/rgh-host.js
+          node --check web/rgh-worker.js
+          node --check web/coi-sw.js
+          node tests/browser-files.cjs
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4

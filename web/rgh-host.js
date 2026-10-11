@@ -6,12 +6,13 @@ const logEl = document.getElementById('log');
 const statusEl = document.getElementById('status');
 const statsEl = document.getElementById('stats');
 const fpsEl = document.getElementById('fps');
+const localLauncher = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 const lines = [];
 const T0 = performance.now();
 // the log also goes to the launcher, which saves it as rabbids-log.txt (to look at a crash afterwards)
 const logOut = []; let logNew = true, logBusy = false;
 function logFlush() {
-  if (logBusy || !logOut.length || location.protocol === 'file:') return;
+  if (!localLauncher || logBusy || !logOut.length || location.protocol === 'file:') return;
   logBusy = true;
   const body = logOut.splice(0).join('\n') + '\n';
   fetch('log' + (logNew ? '?new=1' : ''), { method: 'POST', body, keepalive: body.length < 60000 }).catch(() => {}).finally(() => { logBusy = false; });
@@ -24,7 +25,7 @@ function log(text) {
   lines.push(text); if (lines.length > 400) lines.splice(0, lines.length - 400);
   logEl.textContent = lines.join('\n'); logEl.scrollTop = logEl.scrollHeight;
   if (window.__rghLog) window.__rghLog(text);
-  if (!/^\[OSReport\]/.test(text) || logOut.length < 20000) logOut.push(`[${((performance.now() - T0) / 1000).toFixed(1)}] ${text}`);
+  if (localLauncher && (!/^\[OSReport\]/.test(text) || logOut.length < 20000)) logOut.push(`[${((performance.now() - T0) / 1000).toFixed(1)}] ${text}`);
 }
 addEventListener('keydown', (e) => { if (e.code === 'F9' && window.__dbgReq) { e.preventDefault(); window.__dbgReq('F9'); UI.toast('Game state saved to the log'); } });
 addEventListener('error', (e) => { log(`[page] error: ${e.message} (${e.filename}:${e.lineno})`); logFlush(); });
@@ -35,6 +36,45 @@ const params = new URLSearchParams(location.search);
 const env = {};
 for (const [k, v] of params) if (k.startsWith('RGH_')) env[k] = v;
 const NORENDER = params.has('norender');
+
+// Public static hosting: use a directory picked from the visitor's own disc.
+// The File objects stay in the browser and are cloned to workers as handles;
+// their gigabytes of contents are only read in small slices on demand.
+let localGameFiles = null;
+const gameStatus = document.getElementById('game-status');
+const chooseGame = document.getElementById('choose-game');
+const folderInput = document.getElementById('game-folder');
+chooseGame.onclick = () => folderInput.click();
+folderInput.onchange = () => {
+  const files = Array.from(folderInput.files);
+  const paths = files.map((file) => (file.webkitRelativePath || file.name).replace(/\\/g, '/'));
+  const candidates = paths.filter((path) => /(^|\/)sys\/boot\.bin$/i.test(path));
+  const prefix = candidates.find((path) => paths.includes(path.slice(0, -'sys/boot.bin'.length) + 'files/LynWiiRetail.elf'))
+    || candidates[0];
+  if (!prefix) { localGameFiles = null; gameStatus.textContent = 'No sys/boot.bin found. Select the extracted entire partition folder.'; return; }
+  const root = prefix.slice(0, -'sys/boot.bin'.length);
+  localGameFiles = files.flatMap((file, index) => paths[index].startsWith(root)
+    ? [['game/' + paths[index].slice(root.length), file]] : []);
+  if (!localGameFiles.some(([path]) => path === 'game/sys/fst.bin') ||
+      !localGameFiles.some(([path]) => path === 'game/sys/main.dol')) {
+    localGameFiles = null;
+    gameStatus.textContent = 'The folder is missing sys/fst.bin or sys/main.dol. Select the extracted partition, not an RVZ/ISO file.';
+    return;
+  }
+  const total = localGameFiles.reduce((n, [, file]) => n + file.size, 0);
+  gameStatus.textContent = `${localGameFiles.length} local files ready (${(total / 1073741824).toFixed(2)} GiB). Press Play.`;
+};
+
+const assetBasePromise = fetch('game-config.json', { cache: 'no-store' })
+  .then(async (response) => response.ok ? await response.json() : null)
+  .then((config) => {
+    if (!config || typeof config.assetBase !== 'string') return null;
+    const url = new URL(config.assetBase, location.href);
+    if (!['https:', 'http:'].includes(url.protocol) || (location.protocol === 'https:' && url.protocol !== 'https:')) return null;
+    if (!url.pathname.endsWith('/')) url.pathname += '/';
+    gameStatus.textContent = 'Hosted game data configured. You can press Play directly.';
+    return url.href;
+  }).catch((e) => { console.warn('Game data configuration:', e); return null; });
 
 // rgh.wasm.gz (preferred, smaller) or rgh.wasm
 async function loadModule() {
@@ -133,13 +173,33 @@ function prepareShaders(r, all, onProgress) {
 // ---- Play: loading screen, then the game
 let started = false;
 async function play() {
-  if (started) return; started = true;
+  if (started) return;
+  const remoteBase = await assetBasePromise;
+  if (!localGameFiles && !remoteBase && !localLauncher) {
+    gameStatus.textContent = 'Choose the extracted game folder to play; no hosted game data is configured.';
+    folderInput.click();
+    return;
+  }
+  if (!localGameFiles && remoteBase) {
+    try {
+      const file = new URL('game/sys/boot.bin', remoteBase);
+      const head = await fetch(file.href, { method: 'HEAD', cache: 'no-store' });
+      if (!head.ok || !Number(head.headers.get('Content-Length'))) throw new Error('HEAD must expose Content-Length');
+      const sample = await fetch(file.href, { headers: { Range: 'bytes=0-31' }, cache: 'no-store' });
+      if (sample.status !== 206 || !sample.headers.get('Content-Range')) throw new Error('GET Range must return 206 and expose Content-Range');
+    } catch (error) {
+      gameStatus.textContent = `Game data server unavailable: ${error.message}. Select your local extracted folder instead.`;
+      log(`[hosting] ${error.stack || error}`);
+      return;
+    }
+  }
+  started = true;
   primeAudio();
   if (!params.has('autostart') && !NORENDER) UI.fullscreen(true);
   const title = document.getElementById('title');
   title.classList.add('loading');
   const P = (f, t, s) => UI.progress(f, t, s);
-  if (!crossOriginIsolated) { P(0, 'Cannot start', 'The page is not isolated (COOP/COEP): open it with the launcher / serve.py.'); log('ERROR: the page is not cross-origin isolated (COOP/COEP). Open it with serve.py.'); return; }
+  if (!crossOriginIsolated) { P(0, 'Cannot start', 'Browser is preparing cross-origin isolation. Reload the page and try again.'); log('ERROR: the page is not cross-origin isolated (COOP/COEP).'); started = false; return; }
   P(0.02, 'Loading…', 'Preparing the game');
   let skip = false;
   const skipBtn = document.getElementById('skip');
@@ -166,14 +226,14 @@ async function play() {
   title.classList.add('gone');
   setTimeout(() => { title.hidden = true; }, 800);
   document.body.classList.add('playing');
-  runGame(module, nand);
+  runGame(module, nand, remoteBase);
 }
 
-function runGame(module, nand) {
+function runGame(module, nand, remoteBase) {
   const memory = new WebAssembly.Memory({ initial: 4096, maximum: 16384, shared: true });
   const tidBuf = new Int32Array(new SharedArrayBuffer(4));
   if (nand) log(`[nand] saved game loaded (${nand.byteLength} bytes)`);
-  const cfg = { base: new URL('./', location.href).href, env, nand };
+  const cfg = { base: remoteBase || new URL('./', location.href).href, env, nand, localFiles: localGameFiles };
   const workers = [];
   function spawn(tid, arg) {
     const w = new Worker('rgh-worker.js');
@@ -315,7 +375,7 @@ async function nandSave(buf) {
 // (clearing the browser data would otherwise delete the game's progress)
 let nandBackupT = 0, nandBackupBuf = null;
 function nandBackup(buf) {
-  if (location.protocol === 'file:' || !buf) return;
+  if (!localLauncher || location.protocol === 'file:' || !buf) return;
   nandBackupBuf = buf; clearTimeout(nandBackupT);
   nandBackupT = setTimeout(() => { fetch('nand', { method: 'POST', body: nandBackupBuf }).catch(() => {}); nandBackupBuf = null; }, 1500);
 }

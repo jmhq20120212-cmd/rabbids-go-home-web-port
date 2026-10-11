@@ -5,14 +5,14 @@ gen_rso/
 build/
 game/
 web/rgh.wasm
-web/rgh.wasm.gz
-web/shaders.bin
 web/gen/
 web/gen_rso/
+web/game-config.json
 web/assets/*
 !web/assets/README.md
 # your saves and logs
 *.bin
+!web/shaders.bin
 rabbids-log*.txt
 registro-rabbids*.txt
 partida-rabbids.bin
@@ -20,3 +20,5 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+test-chrome-profile/
+tests/.game-smoke.png

@@ -1,5 +1,13 @@
 # Rabbids Go Home — Web Port
 
+**Browser:** https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/
+**Publishing and game file setup:** [docs/PUBLISH.md](docs/PUBLISH.md)
+
+On GitHub Pages choose the extracted `entire partition` folder from your own disc
+to play. Files are read locally without uploading them. For automatic loading
+from a public HTTPS asset host, configure `web/game-config.json` as described
+in the publishing guide. GitHub Pages cannot host the full game partition.
+
 A port of **Rabbids Go Home** (Wii, USA version `RGWE41`) that runs in a web browser, built by
 **static recompilation**: the game's PowerPC code is translated ahead of time into C and compiled to
 WebAssembly, and the Wii hardware it talks to (GPU, audio DSP, disc drive, Wii Remote, NAND, OS

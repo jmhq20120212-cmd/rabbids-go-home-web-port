@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Rabbids web diagnostics</title></head>
+<body>
+  <h1>Rabbids web diagnostics</h1>
+  <pre id="results">Checking browser requirements…</pre>
+  <script src="coi.js"></script>
+  <script>
+    (async () => {
+      const result = [
+        `Cross-origin isolation: ${crossOriginIsolated ? 'PASS' : 'FAIL (service worker may still be installing)'}`,
+        `SharedArrayBuffer: ${typeof SharedArrayBuffer === 'function' ? 'PASS' : 'FAIL'}`,
+        `WebGL2: ${document.createElement('canvas').getContext('webgl2') ? 'PASS' : 'FAIL'}`,
+      ];
+      try {
+        const response = await fetch('rgh.wasm.gz', {method: 'HEAD'});
+        result.push(`WASM asset: ${response.ok ? 'PASS' : 'FAIL'} (HTTP ${response.status})`);
+      } catch (error) { result.push(`WASM asset: FAIL (${error.message})`); }
+      try {
+        const registration = await navigator.serviceWorker?.getRegistration();
+        result.push(`Service worker: ${registration?.active?.state || registration?.installing?.state || 'not active'}`);
+        result.push(`Page controlled: ${navigator.serviceWorker?.controller ? 'YES' : 'NO'}`);
+      } catch (error) { result.push(`Service worker: ${error.message}`); }
+      document.querySelector('#results').textContent = result.join('\n');
+    })();
+  </script>
+</body>
+</html>

@@ -14,8 +14,10 @@ function str(p, n) { return td.decode(u8().slice(p, p + n)); }
 const sizeCache = new Map();
 const blockCache = new Map();      // url|block -> Uint8Array
 const BLOCK = 262144, MAXBLOCKS = 96;      // 256 KiB per request: fewer round trips while the game loads
+let localFiles = null, localReader = null;
 function fileUrl(path) { return cfg.base + path.split('/').map(encodeURIComponent).join('/'); }
 function fileSize(path) {
+  if (localFiles) return localFiles.get(path)?.size ?? -1;
   if (sizeCache.has(path)) return sizeCache.get(path);
   const x = new XMLHttpRequest();
   x.open('HEAD', fileUrl(path), false);
@@ -28,14 +30,24 @@ function getBlock(path, b) {
   const key = path + '|' + b;
   let blk = blockCache.get(key);
   if (blk) { blockCache.delete(key); blockCache.set(key, blk); return blk; }
-  const x = new XMLHttpRequest();
-  x.open('GET', fileUrl(path), false);
-  x.responseType = 'arraybuffer';
-  x.setRequestHeader('Range', `bytes=${b * BLOCK}-${b * BLOCK + BLOCK - 1}`);
-  x.send();
-  if (x.status !== 206 && x.status !== 200) return null;
-  blk = new Uint8Array(x.response);
-  if (x.status === 200) blk = blk.slice(b * BLOCK, b * BLOCK + BLOCK);
+  if (localFiles) {
+    const file = localFiles.get(path);
+    if (!file) return null;
+    blk = new Uint8Array(localReader.readAsArrayBuffer(file.slice(b * BLOCK, (b + 1) * BLOCK)));
+  } else {
+    const x = new XMLHttpRequest();
+    x.open('GET', fileUrl(path), false);
+    x.responseType = 'arraybuffer';
+    x.setRequestHeader('Range', `bytes=${b * BLOCK}-${b * BLOCK + BLOCK - 1}`);
+    try { x.send(); } catch (e) { return null; }
+    if (x.status !== 206 && x.status !== 200) return null;
+    blk = new Uint8Array(x.response);
+    if (x.status === 200) {
+      // Small servers may ignore Range. Reject a large full-file reply.
+      if (blk.length > 4 * BLOCK) return null;
+      blk = blk.slice(b * BLOCK, b * BLOCK + BLOCK);
+    }
+  }
   blockCache.set(key, blk);
   if (blockCache.size > MAXBLOCKS) blockCache.delete(blockCache.keys().next().value);
   return blk;
@@ -137,6 +149,7 @@ onmessage = async (e) => {
   const m = e.data;
   if (m.type !== 'start') return;
   ({ memory: mem, module, cfg, tidBuf } = m);
+  if (cfg.localFiles) { localFiles = new Map(cfg.localFiles); localReader = new FileReaderSync(); }
   try {
     inst = await WebAssembly.instantiate(module, imports());
     if (m.tid === 0) inst.exports._start();

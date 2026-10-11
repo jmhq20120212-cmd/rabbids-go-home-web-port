@@ -64,6 +64,12 @@
   #menu .ibtn.play img { width: 100%; }
   @keyframes rise { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
   #title.loading #menu { opacity: 0; transform: translate(-20px, -50%); pointer-events: none; }
+  #game-source { position: absolute; z-index: 2; left: 5vw; bottom: max(11vh, 70px); max-width: min(460px, 90vw);
+                 padding: 10px 14px; border-radius: 13px; background: rgba(5, 19, 40, .85); color: #effaff;
+                 font-size: 12px; box-shadow: 0 4px 15px #0007; }
+  #game-source button { margin-right: 8px; }
+  #game-status { display: inline; }
+  #title.loading #game-source { display: none; }
 
   #loader { position: absolute; z-index: 1; left: 5vw; top: 50%; transform: translateY(-50%); width: clamp(260px, 34vw, 560px);
             opacity: 0; pointer-events: none; transition: opacity .4s .15s; text-align: center; }
@@ -176,6 +182,11 @@
     <button class="ibtn" id="t-settings" aria-label="Settings"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/btn-settings.png" alt="Settings"></button>
     <button class="ibtn" id="t-credits" aria-label="Credits"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/btn-credits.png" alt="Credits"></button>
   </nav>
+  <div id="game-source">
+    <button class="wbtn" id="choose-game" type="button">Choose game folder</button>
+    <input id="game-folder" type="file" webkitdirectory directory multiple hidden>
+    <span id="game-status">Select the extracted folder from your own game disc.</span>
+  </div>
   <div id="loader">
     <div id="barbox"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/barra.png" alt=""><div id="barslot"><div id="barfill"></div></div></div>
     <div id="loadtext">Loading…</div>
@@ -205,7 +216,7 @@
     </div>
     <div class="pane" id="p-dsu" hidden>
       <div class="dsuhead"><img onerror="this.remove()" src="assets/dsu.png" alt=""><div><h3>DSU Remote: your phone as a Wii Remote</h3>
-        <div class="muted">Open the app on the phone (same Wi-Fi network as this PC) and type the IP it shows. Default port: 26760.</div></div></div>
+        <div class="muted">Requires the local launcher (serve.py). It cannot connect from GitHub Pages. On localhost, open the app on the phone (same Wi-Fi network) and type its IP, port 26760.</div></div></div>
       <div class="row"><input id="dsu-host" placeholder="Phone IP, e.g. 192.168.1.50" style="flex:1;min-width:220px"><input id="dsu-port" type="number" min="1" max="65535" style="width:90px"><button class="wbtn blue" id="dsu-connect">Connect</button></div>
       <div class="hint" id="dsu-status"></div>
       <div class="row"><label>Slot 1: <select id="dsu-role0"></select></label><label>Slot 2: <select id="dsu-role1"></select></label></div>
@@ -243,6 +254,7 @@
   </div>
 </div>
 
+<script src="coi.js"></script>
 <script src="gx-renderer.js"></script>
 <script src="input.js"></script>
 <script src="ui.js"></script>
