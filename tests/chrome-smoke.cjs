@@ -34,7 +34,7 @@ async function main() {
     await cdp('Page.navigate', {url: gameTest
       ? 'http://127.0.0.1:8991/?noshaderwarm&autostart'
       : publishedTest
-        ? 'https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/web/health.html'
+        ? 'https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/health.html'
         : 'http://127.0.0.1:8990/health.html'});
     if (gameTest) {
       let result;
