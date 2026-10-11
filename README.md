@@ -8,52 +8,6 @@ AudioWorklet.
 
 *Ported by **teaser.lua**.*
 
-> **This repository contains no game code or data.** Rabbids Go Home is © Ubisoft. Everything that
-> comes from the game — the recompiled code, the shader cache, the disc files, artwork — is produced
-> locally from **your own legally obtained copy** and is excluded from the repository by
-> `.gitignore`. This project is not affiliated with or endorsed by Ubisoft or Nintendo.
-
-## What you need
-
-- Your own copy of **Rabbids Go Home for Wii (USA, RGWE41)**, extracted with Dolphin:
-  right click the game → *Properties* → *Filesystem* → right click the disc → *Extract Entire Partition…*.
-  You get a folder (here called `entire partition`) containing `sys/`, `files/`, `tmd.bin`, `ticket.bin`.
-- To build: Linux, macOS or WSL with `python3`, `clang`, `make`, `gzip`,
-  the [WASI SDK](https://github.com/WebAssembly/wasi-sdk) (tested with 25) and
-  [Binaryen](https://github.com/WebAssembly/binaryen) (tested with 123).
-- To play: Chrome or Edge (WebGL 2 + SharedArrayBuffer), and Python 3 or Windows PowerShell for the local server.
-
-## Build
-
-```sh
-export W=/path/to/wasi-sdk BINARYEN=/path/to/binaryen
-tools/build.sh "/path/to/entire partition"
-```
-
-`build.sh` does, in order:
-
-1. `tools/gen.py` — recompiles `main.dol` to C in `gen/`, using the symbols of `LynWiiRetail.elf` from the disc.
-2. a native build (`build/rgh`), which runs once to capture the game's AI module (`Ai2CppWiiFinal.rso`)
-   exactly as the game relocates it in memory;
-3. `tools/gen_rso.py` — recompiles that module to `gen_rso/`;
-4. the browser build: `web/rgh.wasm` (+ `web/rgh.wasm.gz`).
-
-A full build takes a while (the generated C is large; about 1–2 hours on a laptop) and needs about
-8 GB of RAM for the final WebAssembly optimization step. Later builds are incremental.
-
-## Play
-
-- **Windows:** put the project folder next to `entire partition` and double click `start-rabbids-web.bat`
-  (or `start-rabbids-web.ps1 -Game "C:\path\entire partition"`).
-- **Any OS:** `python3 serve.py --game "/path/to/entire partition"` and open `http://localhost:8080/`.
-
-The server only listens on `127.0.0.1` and only serves this folder and your game copy to your own
-browser. Saves are kept in the browser (IndexedDB), with a backup copy written next to `web/`
-(`rabbids-save-backup.bin`).
-
-On the first start the loading bar compiles the shaders the browser has already seen; new ones are
-drawn with a generic shader while they compile and are remembered for the next time.
-
 ## Controls (default, all rebindable in *Settings*)
 
 | Wii | Keyboard | Controller (Xbox / PlayStation) |
