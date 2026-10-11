@@ -1,0 +1,22 @@
+# Everything derived from the game disc stays on your computer and is never committed:
+# the recompiled code, the build output and the game data itself.
+gen/
+gen_rso/
+build/
+game/
+web/rgh.wasm
+web/rgh.wasm.gz
+web/shaders.bin
+web/gen/
+web/gen_rso/
+web/assets/*
+!web/assets/README.md
+# your saves and logs
+*.bin
+rabbids-log*.txt
+registro-rabbids*.txt
+partida-rabbids.bin
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
