@@ -1,6 +1,8 @@
 // GitHub Pages does not allow custom response headers. A same-origin service
 // worker adds the isolation headers required for WebAssembly shared memory.
-self.addEventListener('install', () => self.skipWaiting());
+// Let an updated worker wait until existing tabs close. Forcing activation
+// during a large streaming WASM download can abort the response mid-flight.
+self.addEventListener('install', () => {});
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);

@@ -6,9 +6,7 @@ if ((location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(locat
     if (!reloading && !crossOriginIsolated) { reloading = true; location.reload(); }
   });
   navigator.serviceWorker.register('./coi-sw.js', { scope: './', updateViaCache: 'none' })
-    .then((registration) => {
-      // A visitor reopening the game after a deploy gets the current worker.
-      if (navigator.serviceWorker.controller) registration.update().catch(() => {});
-    })
+    // Registration already checks for updates. Calling update() again at page
+    // startup can replace the active worker while WebAssembly is streaming.
     .catch((err) => { console.error('Cannot enable cross-origin isolation:', err); });
 }

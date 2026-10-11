@@ -77,20 +77,22 @@ const assetBasePromise = fetch('game-config.json', { cache: 'no-store' })
     return url.href;
   }).catch((e) => { console.warn('Game data configuration:', e); return null; });
 
-// rgh.wasm.gz (preferred, smaller) or rgh.wasm
-async function loadModule() {
-  if (params.get('wasm')) return WebAssembly.compileStreaming(fetch(params.get('wasm')));   // debugging builds
-  const gz = await fetch('rgh.wasm.gz', { cache: 'no-cache' }).catch(() => null);
-  if (gz && gz.ok && typeof DecompressionStream === 'function') {
-    const body = gz.body.pipeThrough(new DecompressionStream('gzip'));
-    return WebAssembly.compileStreaming(new Response(body, { headers: { 'Content-Type': 'application/wasm' } }));
-  }
-  return WebAssembly.compileStreaming(fetch('rgh.wasm'));
+// Preload while the menu is visible. If it fails, a later Play click creates
+// a new promise, so transient AbortError does not poison the whole session.
+let modulePromise = null;
+function startModuleLoad() {
+  const startAt = performance.now();
+  const promise = params.get('wasm')
+    ? WebAssembly.compileStreaming(fetch(params.get('wasm')))
+    : RGHModuleLoader.load({ onRetry: (attempt, error) => log(`[wasm] retry ${attempt}: ${error?.message || error}`) });
+  modulePromise = promise.then((module) => {
+    log(`[host] module compiled in ${((performance.now() - startAt) / 1000).toFixed(1)} s`);
+    return module;
+  });
+  modulePromise.catch(() => { /* handled on Play */ });
+  return modulePromise;
 }
-// the game code and the save data start loading as soon as the page opens (while the title screen shows)
-let t0Module = performance.now();
-const modulePromise = crossOriginIsolated ? loadModule().then((m) => { log(`[host] module compiled in ${((performance.now() - t0Module) / 1000).toFixed(1)} s`); return m; }) : Promise.reject(new Error('not cross-origin isolated'));
-modulePromise.catch(() => { /* reported on Play */ });
+if (crossOriginIsolated) startModuleLoad();
 const nandPromise = nandLoad();
 
 // ---- renderer: created on the loading screen so that every shader is compiled before the game starts
@@ -207,7 +209,23 @@ async function play() {
   const skipT = setTimeout(() => { skipBtn.style.display = 'inline-block'; }, 60000);
   skipBtn.onclick = () => { skip = true; };
   let module;
-  try { module = await modulePromise; } catch (e) { P(0, 'Could not load the game', String(e.message || e)); return; }
+  try {
+    module = await (modulePromise || startModuleLoad());
+  } catch (firstError) {
+    log(`[wasm] preload failed, retrying Play: ${firstError?.stack || firstError}`);
+    P(0.03, 'Retrying game download…', 'The browser interrupted the previous attempt');
+    try { module = await startModuleLoad(); }
+    catch (e) {
+      P(0, 'Could not load the game', `${e.message || e} · Please check your connection and press Play again.`);
+      log(`[wasm] game download failed: ${e?.stack || e}`);
+      started = false;
+      title.classList.remove('loading');
+      skipBtn.style.display = 'none';
+      clearTimeout(skipT);
+      UI.toast('Download interrupted. Press Play to retry.');
+      return;
+    }
+  }
   const nand = await nandPromise;
   P(0.08, 'Loading…', 'Reading shaders');
   const r = makeRenderer();

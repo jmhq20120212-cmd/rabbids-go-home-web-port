@@ -9,6 +9,7 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function main() {
   const gameTest = process.argv.includes('--game');
   const publishedGame = process.argv.includes('--published-game');
+  const simulateWasmAbort = process.argv.includes('--simulate-wasm-abort');
   const syncProbe = process.argv.includes('--sync-probe');
   const publishedTest = process.argv.includes('--published');
   const r2Arg = process.argv.indexOf('--r2-base');
@@ -34,9 +35,25 @@ async function main() {
     pending.set(id, resolve);
     socket.send(JSON.stringify({id,method,params}));
   });
+  let injectionId = null;
   try {
     await cdp('Page.enable');
     await cdp('Runtime.enable');
+    if (simulateWasmAbort) {
+      const injected = await cdp('Page.addScriptToEvaluateOnNewDocument', {source: `
+        (() => {
+          const original = WebAssembly.compileStreaming.bind(WebAssembly);
+          let calls = 0;
+          WebAssembly.compileStreaming = function(...args) {
+            if (++calls === 1) return Promise.reject(new DOMException('The operation was aborted.', 'AbortError'));
+            return original(...args);
+          };
+          Object.defineProperty(window, '__wasmAbortCount', {get: () => calls});
+        })();
+      `});
+      assert(!injected.error,'Could not install artificial AbortError in Chrome');
+      injectionId = injected.result?.identifier || null;
+    }
     await cdp('Page.navigate', {url: gameTest || publishedGame
       ? (publishedGame
         ? 'https://teaserlua.github.io/rabbids-go-home-web-port/?noshaderwarm&autostart'
@@ -86,7 +103,7 @@ async function main() {
       assert(result?.isolated, 'The game page is not cross-origin isolated');
       assert(result?.workers > 0, 'The WASM game did not start a worker');
       let late;
-      for (let sample = 0; sample < (publishedGame ? 18 : 3); sample++) {
+      for (let sample = 0; sample < (publishedGame ? 18 : 12); sample++) {
         await delay(5000);
         late = await cdp('Runtime.evaluate', {
           expression: '({status:document.querySelector("#status")?.textContent,workers:window.__rgh?.workers?.length||0,frames:window.__renderer?.stats?.xfbCopies||0,info:document.querySelector("#stats")?.textContent,log:document.querySelector("#log")?.textContent.slice(-3000)})',
@@ -97,6 +114,15 @@ async function main() {
         if (value?.workers > 2 && value.frames > 0) break;
       }
       console.log('Final:', late.result?.result?.value);
+      if (simulateWasmAbort) {
+        const recover = await cdp('Runtime.evaluate',{
+          expression: '({count:window.__wasmAbortCount||0, log:document.querySelector("#log")?.textContent||""})',returnByValue:true,
+        });
+        const proof = recover.result?.result?.value;
+        assert(proof?.count >= 2, 'WASM compilation was not retried after simulated AbortError');
+        assert.match(proof.log, /\[wasm\] retry 1: The operation was aborted\./);
+        console.log(`PASS simulated AbortError recovered in browser after ${proof.count} compilation attempts`);
+      }
       assert.equal(late.result?.result?.value?.status, 'Running', 'Game stopped or crashed after launch');
       assert(late.result?.result?.value?.workers > 2, 'Game did not advance beyond startup');
       assert(late.result?.result?.value?.frames > 0, 'Game never rendered a frame');
@@ -149,6 +175,9 @@ async function main() {
       assert.equal(got?.length, 32);
     }
     console.log('PASS Chrome static hosting, COOP/COEP service worker and WASM asset');
-  } finally { socket.close(); }
+  } finally {
+    if (injectionId) await cdp('Page.removeScriptToEvaluateOnNewDocument', {identifier:injectionId});
+    socket.close();
+  }
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });

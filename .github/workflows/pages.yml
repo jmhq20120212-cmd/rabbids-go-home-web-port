@@ -28,12 +28,15 @@ jobs:
           test -s web/rgh.wasm.gz
           test -s web/shaders.bin
           test -s web/rgh-worker.js
+          test -s web/wasm-loader.js
           test -s web/coi-sw.js
           for img in fondo.jpg btn-play.png btn-settings.png btn-credits.png barra.png dsu.png; do test -s "web/assets/$img"; done
           node --check web/rgh-host.js
+          node --check web/wasm-loader.js
           node --check web/rgh-worker.js
           node --check web/coi-sw.js
           node tests/browser-files.cjs
+          node --test tests/wasm-loader.cjs
       - uses: actions/configure-pages@v5
         with:
           enablement: true
