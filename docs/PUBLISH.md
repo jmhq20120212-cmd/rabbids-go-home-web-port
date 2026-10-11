@@ -4,6 +4,10 @@ The GitHub Pages workflow publishes `web/` to:
 
 https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/
 
+The repository-root `index.html` redirects to `web/` when Pages publishes from
+the `main` branch. When the GitHub Actions deployment publishes the contents of
+`web/` directly, the game also works at the root URL.
+
 GitHub Pages has a 1 GB published-site limit. This project uses a small web client and
 compressed WASM. Game disc contents stay outside Git history. The first visit installs
 `coi-sw.js` and reloads to enable `SharedArrayBuffer` for the WASM worker runtime.

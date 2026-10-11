@@ -8,6 +8,7 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main() {
   const gameTest = process.argv.includes('--game');
+  const publishedTest = process.argv.includes('--published');
   const tabs = await (await fetch('http://127.0.0.1:9333/json')).json();
   const tab = tabs.find((x) => x.type === 'page');
   assert(tab, 'Chrome debugging endpoint has no page target');
@@ -32,7 +33,9 @@ async function main() {
     await cdp('Runtime.enable');
     await cdp('Page.navigate', {url: gameTest
       ? 'http://127.0.0.1:8991/?noshaderwarm&autostart'
-      : 'http://127.0.0.1:8990/health.html'});
+      : publishedTest
+        ? 'https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/web/health.html'
+        : 'http://127.0.0.1:8990/health.html'});
     if (gameTest) {
       let result;
       for (let attempt = 0; attempt < 60; attempt++) {
