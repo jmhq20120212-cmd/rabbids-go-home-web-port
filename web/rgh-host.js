@@ -222,12 +222,29 @@ async function play() {
     ]);
   }
   clearTimeout(skipT);
-  P(1, 'Ready!', '');
-  await new Promise((res) => setTimeout(res, 350));
+  if (remoteBase && !localGameFiles && !NORENDER) {
+    // HTTP game data has a higher first-start latency than the local server.
+    // Keep the loading screen up until the first actual rendered frame rather
+    // than showing a black screen while the first disc blocks are downloaded.
+    P(1, 'Starting the game…', 'Reading game files from Cloudflare R2');
+    runGame(module, nand, remoteBase);
+    await new Promise((resolve) => {
+      const startedAt = performance.now();
+      const id = setInterval(() => {
+        if ((r && r.stats && (r.stats.xfbCopies || 0) > 0) ||
+            statusEl.textContent !== 'Running' || performance.now() - startedAt > 90000) {
+          clearInterval(id); resolve();
+        }
+      }, 100);
+    });
+  } else {
+    P(1, 'Ready!', '');
+    await new Promise((res) => setTimeout(res, 350));
+    runGame(module, nand, remoteBase);
+  }
   title.classList.add('gone');
   setTimeout(() => { title.hidden = true; }, 800);
   document.body.classList.add('playing');
-  runGame(module, nand, remoteBase);
 }
 
 function runGame(module, nand, remoteBase) {

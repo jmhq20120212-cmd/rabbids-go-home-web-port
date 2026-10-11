@@ -8,6 +8,8 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main() {
   const gameTest = process.argv.includes('--game');
+  const publishedGame = process.argv.includes('--published-game');
+  const syncProbe = process.argv.includes('--sync-probe');
   const publishedTest = process.argv.includes('--published');
   const r2Arg = process.argv.indexOf('--r2-base');
   const r2Base = r2Arg < 0 ? null : process.argv[r2Arg + 1];
@@ -35,12 +37,41 @@ async function main() {
   try {
     await cdp('Page.enable');
     await cdp('Runtime.enable');
-    await cdp('Page.navigate', {url: gameTest
-      ? 'http://127.0.0.1:8991/?noshaderwarm&autostart'
-      : publishedTest
+    await cdp('Page.navigate', {url: gameTest || publishedGame
+      ? (publishedGame
+        ? 'https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/?noshaderwarm&autostart'
+        : 'http://127.0.0.1:8991/?noshaderwarm&autostart')
+      : publishedTest || syncProbe
         ? 'https://jmhq20120212-cmd.github.io/rabbids-go-home-web-port/health.html'
         : 'http://127.0.0.1:8990/health.html'});
-    if (gameTest) {
+    if (syncProbe) {
+      await delay(1800);
+      const probe = await cdp('Runtime.evaluate', {
+        expression: `(async () => {
+          const script = \`onmessage=()=>{
+            const paths=['game/sys/boot.bin','game/sys/fst.bin','game/sys/main.dol','game/files/RGH.BF.part00'];
+            const results=[];
+            for (const path of paths) {
+              const url='https://rabbids-go-home-assets.jmhq20120212.workers.dev/'+path;
+              try {
+                const h=new XMLHttpRequest();h.open('HEAD',url,false);h.send();
+                const g=new XMLHttpRequest();g.open('GET',url,false);g.responseType='arraybuffer';g.setRequestHeader('Range','bytes=0-262143');g.send();
+                results.push({path,head:h.status,size:h.getResponseHeader('content-length'),range:g.status,bytes:g.response?.byteLength,contentRange:g.getResponseHeader('content-range')});
+              } catch(error) {results.push({path,error:String(error)});}
+            }
+            postMessage(results);
+          };\`;
+          const u=URL.createObjectURL(new Blob([script],{type:'text/javascript'}));
+          const w=new Worker(u);
+          try { return await Promise.race([new Promise((resolve)=>{w.onmessage=e=>resolve(e.data);w.onerror=e=>resolve({error:e.message});w.postMessage(1)}),new Promise((resolve)=>setTimeout(()=>resolve({timeout:true}),45000))]); }
+          finally {w.terminate();URL.revokeObjectURL(u);}
+        })()`,
+        returnByValue: true, awaitPromise: true,
+      });
+      console.log('Synchronous XHR in isolated worker:', probe.result?.result?.value);
+      return;
+    }
+    if (gameTest || publishedGame) {
       let result;
       for (let attempt = 0; attempt < 60; attempt++) {
         await delay(500);
@@ -54,16 +85,24 @@ async function main() {
       console.log(result);
       assert(result?.isolated, 'The game page is not cross-origin isolated');
       assert(result?.workers > 0, 'The WASM game did not start a worker');
-      await delay(10000);
-      const late = await cdp('Runtime.evaluate', {
-        expression: '({status:document.querySelector("#status")?.textContent,workers:window.__rgh?.workers?.length||0,log:document.querySelector("#log")?.textContent.slice(-2000)})',
-        returnByValue: true,
-      });
-      console.log('Ten seconds later:', late.result?.result?.value);
+      let late;
+      for (let sample = 0; sample < (publishedGame ? 18 : 3); sample++) {
+        await delay(5000);
+        late = await cdp('Runtime.evaluate', {
+          expression: '({status:document.querySelector("#status")?.textContent,workers:window.__rgh?.workers?.length||0,frames:window.__renderer?.stats?.xfbCopies||0,info:document.querySelector("#stats")?.textContent,log:document.querySelector("#log")?.textContent.slice(-3000)})',
+          returnByValue: true,
+        });
+        const value = late.result?.result?.value;
+        console.log(`${(sample+1)*5}s after startup: workers=${value?.workers} status=${value?.status} ${value?.info}`);
+        if (value?.workers > 2 && value.frames > 0) break;
+      }
+      console.log('Final:', late.result?.result?.value);
       assert.equal(late.result?.result?.value?.status, 'Running', 'Game stopped or crashed after launch');
+      assert(late.result?.result?.value?.workers > 2, 'Game did not advance beyond startup');
+      assert(late.result?.result?.value?.frames > 0, 'Game never rendered a frame');
       const shot = await cdp('Page.captureScreenshot', {format: 'png', captureBeyondViewport: false});
       if (shot.result?.data) fs.writeFileSync(path.join(__dirname, '.game-smoke.png'), Buffer.from(shot.result.data, 'base64'));
-      console.log('PASS Chrome actual WASM worker launched with local game partition');
+      console.log(`PASS Chrome actual WASM worker launched with ${publishedGame ? 'Cloudflare R2 game data' : 'local game partition'}`);
       return;
     }
     let result;
