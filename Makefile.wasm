@@ -1,0 +1,40 @@
+# Browser build: wasm32 + shared memory (wasi-threads); see web/
+# WASI SDK (tested with 25) and Binaryen (tested with 123): pass W=... BINARYEN=... or set the environment
+W ?= $(or $(WASI_SDK_PATH),/opt/wasi-sdk)
+BINARYEN ?= /opt/binaryen
+WCC := $(W)/bin/clang --target=wasm32-wasip1-threads --sysroot=$(W)/share/wasi-sysroot -matomics -mbulk-memory -mnontrapping-fptoint -msign-ext
+GENFLAGS := -O2 -w -fno-strict-aliasing -fwrapv
+RTFLAGS := -O2 -Wall -Wno-unused-function -fno-strict-aliasing -fwrapv
+GEN := $(sort $(wildcard gen/f[0-9]*.c)) gen/funcs.c
+RSO := $(sort $(wildcard gen_rso/r[0-9]*.c)) $(wildcard gen_rso/rfuncs.c)
+RT := main.c hw.c os.c ios.c disc.c gx.c hle.c dsp.c wpad.c nandfs.c hostio.c gxrender.c ax.c fiber_wasm.c
+OBJ := $(patsubst gen/%.c,build/wasm/%.o,$(GEN)) $(patsubst gen_rso/%.c,build/wasm/%.o,$(RSO)) $(patsubst %.c,build/wasm/rt_%.o,$(RT))
+
+all: web/rgh.wasm.gz
+
+web/rgh.wasm.gz: web/rgh.wasm
+	gzip -9 -k -f web/rgh.wasm
+
+web/rgh.wasm: $(OBJ)
+	$(WCC) -o $@ $(OBJ) -Wl,--import-memory,--shared-memory,--max-memory=1073741824,--initial-memory=268435456 \
+	  -Wl,--export=wasi_thread_start -Wl,--export=malloc -Wl,--export=free -Wl,--export-memory -Wl,-z,stack-size=1048576 \
+	  -lsetjmp -Wl,--export-dynamic -pthread
+	$(BINARYEN)/bin/wasm-opt -O2 --enable-threads --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext \
+	  --enable-exception-handling --enable-mutable-globals $@ -o $@
+	@ls -la $@
+
+build/wasm/%.o: gen/%.c gen/funcs.h runtime/rt.h
+	@mkdir -p build/wasm
+	$(WCC) $(GENFLAGS) -I runtime -I gen -c $< -o $@
+
+build/wasm/r%.o: gen_rso/r%.c gen_rso/rfuncs.h gen/funcs.h runtime/rt.h
+	@mkdir -p build/wasm
+	$(WCC) $(GENFLAGS) -I runtime -I gen -I gen_rso -c $< -o $@
+
+build/wasm/rt_fiber_wasm.o: runtime/fiber_wasm.c runtime/fiber.h
+	@mkdir -p build/wasm
+	$(WCC) $(RTFLAGS) -pthread -mexception-handling -mllvm -wasm-enable-sjlj -I runtime -c $< -o $@
+
+build/wasm/rt_%.o: runtime/%.c runtime/rt.h runtime/hw.h gen/funcs.h
+	@mkdir -p build/wasm
+	$(WCC) $(RTFLAGS) -I runtime -I gen -c $< -o $@

@@ -1,0 +1,43 @@
+# Guest functions replaced by host code.  KEY [flags] -- reason
+# KEY is a symbol name (handler hle_<name>) or an address (handler hle_<ADDR>).
+80366170  -- __OSInitAudioSystem: runs DSP init microcode; nothing to initialise on the host (hle.c)
+80366CC0  save  -- OSSaveContext: binds the guest context to the current host fiber (os.c)
+80366D40  load  -- OSLoadContext: switches to the fiber of that thread (os.c)
+OSReport  -- debug output to stderr (hle.c)
+OSPanic   -- print and stop (hle.c)
+OSFatal   -- print and stop (hle.c)
+# Wii Remote: no Bluetooth stack; one remote + nunchuk on channel 0 from host input (wpad.c)
+WPADInit
+WPADGetStatus
+WPADProbe
+WPADSetConnectCallback
+WPADSetExtensionCallback
+WPADSetSamplingCallback
+WPADGetDataFormat
+WPADSetDataFormat
+WPADGetAccGravityUnit
+WPADGetSensorBarPosition
+WPADGetRadioSensitivity
+WPADDisconnect
+WPADIsMotorEnabled
+WPADEnableMotor
+WPADControlMotor
+WPADIsSpeakerEnabled
+WPADGetSpeakerVolume
+WPADSetSpeakerVolume
+WPADCanSendStreamData
+WPADSendStreamData
+WPADGetDpdSensitivity
+WPADIsDpdEnabled
+WPADStartFastSimpleSync
+WPADStopSimpleSync
+WPADSetSimpleSyncCallback
+WPADSetAutoSamplingBuf
+WPADControlDpd
+WPADControlLed
+WPADControlSpeaker
+WPADControlBLC
+WPADSaveConfig
+WPADWriteExtReg
+WPADGetInfoAsync
+WPADRead

@@ -1,0 +1,30 @@
+# Rabbids Go Home static recompilation - native build (make -f Makefile.native); see Makefile.wasm for the browser build
+CC = clang
+CFLAGS ?= -O1 -g0 -w -fno-strict-aliasing -fwrapv $(EXTRA)
+GEN := $(sort $(wildcard gen/f[0-9]*.c)) gen/funcs.c
+RSO := $(sort $(wildcard gen_rso/r[0-9]*.c)) $(wildcard gen_rso/rfuncs.c)
+RT := runtime/main.c runtime/hw.c runtime/os.c runtime/ios.c runtime/disc.c runtime/gx.c runtime/hle.c runtime/dsp.c runtime/wpad.c runtime/fiber_ucontext.c runtime/nandfs.c runtime/hostio.c runtime/gxrender.c runtime/ax.c
+OBJ := $(patsubst gen/%.c,build/obj/%.o,$(GEN)) $(patsubst gen_rso/%.c,build/obj/%.o,$(RSO)) $(patsubst runtime/%.c,build/obj/rt_%.o,$(RT))
+
+build/rgh: $(OBJ)
+	$(CC) -o $@ $(OBJ) -lm
+
+build/obj/%.o: gen/%.c gen/funcs.h runtime/rt.h
+	@mkdir -p build/obj
+	$(CC) $(CFLAGS) -I runtime -I gen -c $< -o $@
+
+build/obj/r%.o: gen_rso/r%.c gen_rso/rfuncs.h gen/funcs.h runtime/rt.h
+	@mkdir -p build/obj
+	$(CC) $(CFLAGS) -I runtime -I gen -I gen_rso -c $< -o $@
+
+build/obj/rt_%.o: runtime/%.c runtime/rt.h runtime/hw.h gen/funcs.h
+	@mkdir -p build/obj
+	$(CC) -O2 -g -Wall -Wno-unused-function $(EXTRA) -I runtime -I gen -c $< -o $@
+
+gen:
+	python3 -I tools/gen.py game/main.dol game/part/files/LynWiiRetail.elf gen/
+
+clean:
+	rm -rf build
+
+.PHONY: gen clean
