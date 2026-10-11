@@ -50,7 +50,7 @@
   @keyframes toast { 0% { opacity: 0; transform: translateY(12px); } 8%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(6px); } }
 
   /* ---------------------------------------------------------------- title / loading screen */
-  #title { position: fixed; inset: 0; z-index: 30; background: #06102a url(assets/fondo.jpg) center / cover no-repeat; transition: opacity .7s ease; }
+  #title { position: fixed; inset: 0; z-index: 30; background: #06102a url(assets/fondo.jpg?v=menu2) center / cover no-repeat; transition: opacity .7s ease; }
   #title.gone { opacity: 0; pointer-events: none; }
   #title::after { content: ""; position: absolute; inset: 0; pointer-events: none;
                   background: linear-gradient(90deg, rgba(0, 20, 60, .16) 0%, transparent 48%); }
@@ -95,7 +95,7 @@
   #menu .ibtn.noimg::after { content: attr(aria-label); font: 800 clamp(18px, 2.6vw, 30px)/1 var(--round); color: #3a4650; }
   #barbox.noimg { height: 46px; border-radius: 999px; background: linear-gradient(#fff, #e3e9ee); border: 3px solid #b9c6d0; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); }
   #barbox.noimg #barslot { left: 10px; right: 10px; width: auto; top: 10px; height: 20px; }
-  #title { background-color: #0b2a5c; background-image: url(assets/fondo.jpg), radial-gradient(circle at 70% 30%, #3fa7e0 0%, #0b2a5c 70%); }
+  #title { background-color: #0b2a5c; background-image: url(assets/fondo.jpg?v=menu2), radial-gradient(circle at 70% 30%, #3fa7e0 0%, #0b2a5c 70%); }
   @media (max-width: 650px) {
     #menu { left: 50%; top: 45%; transform: translate(-50%, -50%); width: min(92vw, 420px); }
     #title.loading #menu { transform: translate(-50%, -50%); }
@@ -178,12 +178,12 @@
 <!-- title / loading screen -->
 <div id="title">
   <nav id="menu">
-    <button class="ibtn play" id="start" aria-label="Play"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/btn-play.png" alt="Play"></button>
-    <button class="ibtn" id="t-settings" aria-label="Settings"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/btn-settings.png" alt="Settings"></button>
-    <button class="ibtn" id="t-credits" aria-label="Credits"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/btn-credits.png" alt="Credits"></button>
+    <button class="ibtn play" id="start" aria-label="Play"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/btn-play.png?v=menu2" alt="Play"></button>
+    <button class="ibtn" id="t-settings" aria-label="Settings"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/btn-settings.png?v=menu2" alt="Settings"></button>
+    <button class="ibtn" id="t-credits" aria-label="Credits"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/btn-credits.png?v=menu2" alt="Credits"></button>
   </nav>
   <div id="loader">
-    <div id="barbox"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/barra.png" alt=""><div id="barslot"><div id="barfill"></div></div></div>
+    <div id="barbox"><img onerror="this.parentNode.classList.add('noimg');this.remove()" src="assets/barra.png?v=menu2" alt=""><div id="barslot"><div id="barfill"></div></div></div>
     <div id="loadtext">Loading…</div>
     <div id="loadsub"></div>
     <button class="wbtn" id="skip">Start now (don't wait)</button>
@@ -198,7 +198,7 @@
     <header><h2>Settings</h2><span class="pill" id="gp-pill">No controller</span><span class="pill" id="dsu-pill">DSU disconnected</span></header>
     <div class="tabs">
       <button class="tab on" data-pane="p-keys">Controls</button>
-      <button class="tab" data-pane="p-dsu"><img onerror="this.remove()" src="assets/dsu.png" alt="">DSU Remote</button>
+      <button class="tab" data-pane="p-dsu"><img onerror="this.remove()" src="assets/dsu.png?v=menu2" alt="">DSU Remote</button>
       <button class="tab" data-pane="p-video">Display &amp; graphics</button>
     </div>
     <div class="pane" id="p-keys">
@@ -210,7 +210,7 @@
       <table><thead><tr><th>Action</th><th>Key 1</th><th>Key 2</th><th>Controller 1</th><th>Controller 2</th></tr></thead><tbody></tbody></table>
     </div>
     <div class="pane" id="p-dsu" hidden>
-      <div class="dsuhead"><img onerror="this.remove()" src="assets/dsu.png" alt=""><div><h3>DSU Remote: your phone as a Wii Remote</h3>
+      <div class="dsuhead"><img onerror="this.remove()" src="assets/dsu.png?v=menu2" alt=""><div><h3>DSU Remote: your phone as a Wii Remote</h3>
         <div class="muted">Requires the local launcher (serve.py). It cannot connect from GitHub Pages. On localhost, open the app on the phone (same Wi-Fi network) and type its IP, port 26760.</div></div></div>
       <div class="row"><input id="dsu-host" placeholder="Phone IP, e.g. 192.168.1.50" style="flex:1;min-width:220px"><input id="dsu-port" type="number" min="1" max="65535" style="width:90px"><button class="wbtn blue" id="dsu-connect">Connect</button></div>
       <div class="hint" id="dsu-status"></div>
@@ -256,10 +256,10 @@
   </div>
 </div>
 
-<script src="coi.js"></script>
-<script src="gx-renderer.js"></script>
-<script src="input.js"></script>
-<script src="ui.js"></script>
-<script src="rgh-host.js"></script>
+<script src="coi.js?v=menu2"></script>
+<script src="gx-renderer.js?v=menu2"></script>
+<script src="input.js?v=menu2"></script>
+<script src="ui.js?v=menu2"></script>
+<script src="rgh-host.js?v=menu2"></script>
 </body>
 </html>
