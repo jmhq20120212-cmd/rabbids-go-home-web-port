@@ -121,7 +121,7 @@ async function main() {
       else await pipeline(createReadStream(item.abs, { start: item.start, end: item.end - 1 }), createWriteStream(tempFile));
       const digest = item.size === 0 ? createHash('sha256').digest('hex') : await sha256(tempFile, 0, item.size);
       let sent = false;
-      for (let retry = 1; retry <= 4 && !sent; retry++) {
+      for (let retry = 1; retry <= 8 && !sent; retry++) {
         try {
           await runWrangler(cli, ['r2','object','put',`${opts.bucket}/${item.key}`,'--file',tempFile,'--remote',
             '--content-type','application/octet-stream','--cache-control','public,max-age=86400']);
@@ -135,9 +135,9 @@ async function main() {
           }
           sent = true;
         } catch (error) {
-          if (retry === 4) throw error;
-          console.warn(`RETRY ${retry}/4 ${item.key}: ${error.message}`);
-          await new Promise((resolve) => setTimeout(resolve, retry * 800));
+          if (retry === 8) throw error;
+          console.warn(`RETRY ${retry}/8 ${item.key}: ${error.message}`);
+          await new Promise((resolve) => setTimeout(resolve, retry * 1500));
         }
       }
       completed[item.key] = item.stamp;

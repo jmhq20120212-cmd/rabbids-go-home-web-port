@@ -1,0 +1,12 @@
+{
+  "name": "rabbids-go-home-assets",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-11",
+  "workers_dev": true,
+  "r2_buckets": [
+    {
+      "binding": "GAME_DATA",
+      "bucket_name": "rabbids-go-home-web"
+    }
+  ]
+}

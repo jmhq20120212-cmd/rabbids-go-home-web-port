@@ -7,7 +7,6 @@ game/
 web/rgh.wasm
 web/gen/
 web/gen_rso/
-web/game-config.json
 web/assets/*
 !web/assets/README.md
 # your saves and logs

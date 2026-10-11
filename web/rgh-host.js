@@ -73,6 +73,7 @@ const assetBasePromise = fetch('game-config.json', { cache: 'no-store' })
     if (!['https:', 'http:'].includes(url.protocol) || (location.protocol === 'https:' && url.protocol !== 'https:')) return null;
     if (!url.pathname.endsWith('/')) url.pathname += '/';
     gameStatus.textContent = 'Hosted game data configured. You can press Play directly.';
+    chooseGame.textContent = 'Use a local game folder (optional)';
     return url.href;
   }).catch((e) => { console.warn('Game data configuration:', e); return null; });
 

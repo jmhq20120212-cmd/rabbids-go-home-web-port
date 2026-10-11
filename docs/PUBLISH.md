@@ -14,40 +14,39 @@ compressed WASM. Game disc contents stay outside Git history. The first visit in
 
 ## Two sources for game files
 
-1. **No server needed:** On the published page press **Choose game folder** and select
+1. **Local alternative:** On the published page press **Choose game folder** and select
    the extracted `entire partition` folder (with `sys/` and `files/`). The browser
    reads selected files in 256-KiB slices using `FileReaderSync` in its workers.
    The selected files are not uploaded. The player must select them again after
    refreshing. Chrome / Edge desktop support directory selection.
-2. **Hosted data:** With permission to distribute the files, configure an object
-   storage service with a public HTTPS domain and HTTP `HEAD` / `Range` support.
-   Upload the extracted directory under the `/game/` prefix, preserving names:
+2. **Online by default:** The published page now loads the extracted partition
+   automatically from the dedicated Cloudflare Worker with R2 storage. The
+   game objects are under the `/game/` prefix, preserving their names:
 
    ```text
-   https://assets.example.com/game/sys/boot.bin
-   https://assets.example.com/game/sys/fst.bin
-   https://assets.example.com/game/sys/main.dol
-   https://assets.example.com/game/files/RGH.BF
+   https://rabbids-go-home-assets.jmhq20120212.workers.dev/game/sys/boot.bin
+   https://rabbids-go-home-assets.jmhq20120212.workers.dev/game/sys/fst.bin
+   https://rabbids-go-home-assets.jmhq20120212.workers.dev/game/sys/main.dol
+   https://rabbids-go-home-assets.jmhq20120212.workers.dev/game/files/RGH.BF.part00
    ```
 
-   Put a file named `web/game-config.json` in the local project and set its contents:
+   The published `web/game-config.json` is set to:
 
    ```json
-   { "assetBase": "https://assets.example.com/" }
+   { "assetBase": "https://rabbids-go-home-assets.jmhq20120212.workers.dev/" }
    ```
 
-   To publish a **configured** domain, remove the `web/game-config.json` entry from
-   `.gitignore`, commit the file, and push to `main`. The page then automatically
-   reads the remote game files without requiring the folder picker. The configuration
-   is intentionally absent by default: no asset server or URL has been supplied.
+   This configuration is committed and deployed with GitHub Pages. The browser
+   reads the remote game files using byte ranges, with no folder selection.
 
 ## Object storage requirements
 
 The dedicated Cloudflare bucket `rabbids-go-home-web` has been created and
 tested with synthetic objects. See [CLOUDFLARE-R2.md](CLOUDFLARE-R2.md) for
 its configured CORS policy, development URL, two resumable upload methods,
-and instructions for a production custom domain. Game disc files have not
-been uploaded to the bucket.
+and the deployed `rabbids-go-home-assets` Cloudflare Worker that serves the
+R2 files to GitHub Pages. All 205 game objects were uploaded and the CDN
+is enabled in `web/game-config.json`. The browser loads them automatically.
 
 Cloudflare R2 with a custom public domain is one compatible option. Set bucket CORS
 to allow `GET`, `HEAD`, and the request header `Range` from

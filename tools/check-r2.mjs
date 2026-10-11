@@ -32,6 +32,6 @@ try {
   if (buffer.byteLength !== 32) throw new Error(`Range returned ${buffer.byteLength} bytes, expected 32`);
   console.log(`PASS ${fileUrl.origin} - 200 HEAD, 206 GET Range, ${size} byte object, CORS origin ${origin}`);
 } catch (error) {
-  console.error(`FAIL ${fileUrl.href}: ${error.message}`);
+  console.error(`FAIL ${fileUrl.href}: ${error.message}${error.cause?.code ? ` (${error.cause.code})` : ''}`);
   process.exitCode = 1;
 }

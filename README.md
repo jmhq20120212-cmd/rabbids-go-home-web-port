@@ -4,6 +4,10 @@
 **Publishing and game file setup:** [docs/PUBLISH.md](docs/PUBLISH.md)
 **Cloudflare R2 configuration:** [docs/CLOUDFLARE-R2.md](docs/CLOUDFLARE-R2.md)
 
+Click **Play** on the website to load the game files from Cloudflare R2
+automatically. The **Choose game folder** option remains available for playing
+with your own extracted files, including when the public asset host is offline.
+
 *Ported by **teaser.lua**.*
 
 ## Controls (default, all rebindable in *Settings*)
